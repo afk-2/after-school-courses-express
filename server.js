@@ -1,5 +1,6 @@
 const express = require("express"); //Import express
 const app = express(); // Create an express application
+const MongoClient = require("mongodb").MongoClient;
 const path = require("path");
 const fs = require("fs");
 const PORT = 3000;
@@ -19,6 +20,16 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 
     next();
+});
+
+// Database Connection
+let db;
+
+MongoClient.connect("mongodb+srv://abdurahman:afk@cluster0.jlckz.mongodb.net/", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}, (err, client) => {
+    db = client.db("Webstore");
 });
 
 // Middleware to serve static files from the 'static' directory
