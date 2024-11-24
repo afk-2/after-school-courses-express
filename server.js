@@ -25,11 +25,13 @@ app.use((req, res, next) => {
 // Database Connection
 let db;
 
-MongoClient.connect("mongodb+srv://abdurahman:afk@cluster0.jlckz.mongodb.net/", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}, (err, client) => {
+MongoClient.connect("mongodb+srv://abdurahman:afk@cluster0.jlckz.mongodb.net/", (err, client) => {
+    if (err) {
+        console.error("Failed to connect to MongoDB:", err);
+        process.exit(1); // Exit the process if the connection fails
+    }
     db = client.db("Webstore");
+    console.log("Connected to MongoDB!");
 });
 
 // Middleware to serve static files from the 'static' directory
