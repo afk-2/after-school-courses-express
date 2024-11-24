@@ -11,7 +11,17 @@ app.use((req, res, next) => {
     next();
 });
 
-// Static files
+// CORS Middleware
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS, POST, PUT");
+    res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+
+    next();
+});
+
+// Middleware to serve static files from the 'static' directory
 app.use((req, res, next) => {
     const filePath = path.join(__dirname, "static", req.url);
     fs.stat(filePath, (error, fileInfo) => {
