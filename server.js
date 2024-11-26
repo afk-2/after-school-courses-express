@@ -8,6 +8,7 @@ const PORT = 3000;
 
 // Logger Middleware
 app.use((req, res, next) => {
+    console.log("Request method: " + req.method);
     console.log("Request URL: " + req.url);
     console.log("Request date: " + new Date());
     next();
@@ -71,15 +72,24 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
         {_id: new ObjectID(req.params.id)},
         {$set: req.body},
         {safe: true, multi: false},
-        (e, result) => {
-            if (e) return next(e)
+        (error, result) => {
+            if (error) return next(error)
                 res.send((result.result.n === 1) ? {msg: "success"} : {msg: "error"});
         }
     );
 });
 
+// Save order information
+app.post("/collection/:collectionName", (req, res, next) => {
+    req.collection.insertOne(req.body, (error, result) => {
+        if (error) return next(error);
+        res.status(201).send(result.ops[0]);
+    });
+});
+
+
 // Middleware to serve static files from the 'static' directory
-app.use((req, res, next) => {
+app.use("/static",(req, res, next) => {
     const filePath = path.join(__dirname, "static", req.url);
     fs.stat(filePath, (error, fileInfo) => {
         if (error) {
