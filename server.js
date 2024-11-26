@@ -1,6 +1,7 @@
 const express = require("express"); //Import express
 const app = express(); // Create an express application
 const MongoClient = require("mongodb").MongoClient;
+const ObjectID = require("mongodb").ObjectId;
 const path = require("path");
 const fs = require("fs");
 const PORT = 3000;
@@ -22,6 +23,8 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(express.json());
+
 // Database Connection
 let db;
 
@@ -34,20 +37,7 @@ MongoClient.connect("mongodb+srv://abdurahman:afk@cluster0.jlckz.mongodb.net/", 
     console.log("Connected to MongoDB!");
 });
 
-// Middleware to serve static files from the 'static' directory
-app.use((req, res, next) => {
-    const filePath = path.join(__dirname, "static", req.url);
-    fs.stat(filePath, (error, fileInfo) => {
-        if (error) {
-            next();
-            return
-        }
-        if (fileInfo.isFile()) res.sendFile(filePath);
-        else next();
-    });
-});
-
-// get the collection name
+// Get the collection name
 app.param("collectionName", (req, res, next, collectionName) => {
     req.collection = db.collection(collectionName);
 
@@ -59,6 +49,45 @@ app.get("/collection/:collectionName", (req, res, next) => {
     req.collection.find({}).toArray((e, results) => {
         if (e) return next(e)
         res.send(results);
+    });
+});
+
+// Get course by ID
+app.get("/collection/:collectionName/:id", async (req, res, next) => {
+    try {
+        const result = await req.collection.findOne({ _id: new ObjectID(req.params.id) });
+        if (!result) {
+            return res.status(404).send({ error: "Document not found" });
+        }
+        res.send(result);
+    } catch (error) {
+        next(error); // Pass errors to the error-handling middleware
+    }
+});
+
+// Update course
+app.put("/collection/:collectionName/:id", (req, res, next) => {
+    req.collection.updateOne(
+        {_id: new ObjectID(req.params.id)},
+        {$set: req.body},
+        {safe: true, multi: false},
+        (e, result) => {
+            if (e) return next(e)
+                res.send((result.result.n === 1) ? {msg: "success"} : {msg: "error"});
+        }
+    );
+});
+
+// Middleware to serve static files from the 'static' directory
+app.use((req, res, next) => {
+    const filePath = path.join(__dirname, "static", req.url);
+    fs.stat(filePath, (error, fileInfo) => {
+        if (error) {
+            next();
+            return
+        }
+        if (fileInfo.isFile()) res.sendFile(filePath);
+        else next();
     });
 });
 
