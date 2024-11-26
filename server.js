@@ -47,6 +47,21 @@ app.use((req, res, next) => {
     });
 });
 
+// get the collection name
+app.param("collectionName", (req, res, next, collectionName) => {
+    req.collection = db.collection(collectionName);
+
+    return next();
+});
+
+// Retrieving all the courses
+app.get("/collection/:collectionName", (req, res, next) => {
+    req.collection.find({}).toArray((e, results) => {
+        if (e) return next(e)
+        res.send(results);
+    });
+});
+
 // File not found error message
 app.use((req, res, next) => {
     res.status(404);
