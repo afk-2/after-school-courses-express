@@ -4,6 +4,7 @@ const MongoClient = require("mongodb").MongoClient;
 const ObjectID = require("mongodb").ObjectId;
 const path = require("path");
 const fs = require("fs");
+const cors = require("cors")
 const PORT = 3000;
 
 // Logger Middleware
@@ -14,16 +15,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// CORS Middleware
-app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS, POST, PUT");
-    res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
-
-    next();
-});
-
+app.use(cors())
 app.use(express.json());
 
 // Database Connection
@@ -80,10 +72,14 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
 });
 
 // Save order information
-app.post("/collection/:collectionName", (req, res, next) => {
-    req.collection.insertOne(req.body, (error, result) => {
-        if (error) return next(error);
-        res.status(201).send(result.ops[0]);
+app.post("/collection/orders", (req, res, next) => {
+    const orderData = req.body; // Access the order information sent from the front-end
+
+    db.collection("orders").insertOne(orderData, (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: "Failed to save order", error: err });
+        }
+        res.status(201).json({ message: 'Order saved successfully!', order: orderData });
     });
 });
 
