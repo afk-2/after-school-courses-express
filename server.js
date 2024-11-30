@@ -15,6 +15,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// CORS and JSON parsing middleware
 app.use(cors())
 app.use(express.json());
 
@@ -28,6 +29,35 @@ MongoClient.connect("mongodb+srv://abdurahman:afk@cluster0.jlckz.mongodb.net/", 
     }
     db = client.db("Webstore");
     console.log("Connected to MongoDB!");
+
+    /*  Created text index on 'subject', 'location', 'price', and 'spaces' for full-text search */
+
+    // db.collection("courses").createIndex({ 
+    //     subject: "text", 
+    //     location: "text", 
+    //     price: "text", 
+    //     spaces: "text" 
+    // });
+});
+
+// Search route
+app.get("/search", async (req, res) => {
+    const query = req.query.q // Get the query from search
+
+    try {
+        const results = await db.collection("courses").find({
+            $text: {  $search: query  } // Execute the text search
+        }).toArray();
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: "No matching courses found" });
+        }
+
+        res.json(results);
+    } catch (error) {
+        console.error("Error performing search:", error);
+        res.status(500).json({ message: "Error performing search" });
+    }
 });
 
 // Get the collection name
