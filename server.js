@@ -46,7 +46,12 @@ app.get("/search", async (req, res) => {
 
     try {
         const results = await db.collection("courses").find({
-            $text: {  $search: query  } // Execute the text search
+            // $text: {  $search: query  } // Execute the text search
+            $or: [
+                { subject: { $regex: query, $options: "i" } },
+                { location: { $regex: query, $options: "i" } },
+                { price: parseFloat(query) ? { $eq: parseFloat(query) } : null }
+            ].filter(Boolean) // Remove null conditions
         }).toArray();
 
         if (results.length === 0) {
