@@ -110,16 +110,35 @@ app.put("/collection/:collectionName/:id", (req, res, next) => {
 });
 
 // Save an order
-app.post("/collection/orders", (req, res, next) => {
+app.post("/collection/orders", async (req, res, next) => {
     const orderData = req.body; // Access the order information sent from the front-end
+    const cart = orderData.cart;
 
-    db.collection("orders").insertOne(orderData, (err, result) => {
-        if (err) {
-            return res.status(500).json({ message: "Failed to save order", error: err });
+    try {
+        // First, save the order to the "orders" collection
+        await db.collection("orders").insertOne(orderData);
+
+        // Now, update the "spaces" for each course in the cart
+        for (const course of cart) {
+            console.log(`Updating course with ID: ${course._id}, Decreasing spaces by: ${course.quantity}`);
+            // Update the spaces by subtracting the quantity of this course
+            const result = await db.collection("courses").updateOne(
+                { _id: new ObjectID(course._id) },
+                { $inc: { spaces: -course.quantity } } // Decrease the spaces by the quantity of the course
+            );
+            if (result.matchedCount === 0) {
+                console.error(`Course with _id ${course._id} not found`);
+            }
         }
+
         res.status(201).json({ message: 'Order saved successfully!', order: orderData });
-    });
+    } catch (err) {
+        console.error("Error saving order or updating course spaces:", err);
+        res.status(500).json({ message: "Failed to save order or update course spaces", error: err });
+    }
 });
+
+
 
 
 // Middleware to serve static files from the 'static' directory
