@@ -1,23 +1,21 @@
-const express = require("express"); //Import express
-const app = express(); // Create an express application
+const express = require("express");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectID = require("mongodb").ObjectId;
 const path = require("path");
 const fs = require("fs");
 const cors = require("cors")
+
+const app = express();
 const PORT = 3000;
 
-// Logger Middleware
+app.use(cors()) // Enable cross-origin requests
+app.use(express.json()); // Parse incoming JSON requests
+
+// Logger Middleware: Logs HTTP method, URL, and timestamp for each request
 app.use((req, res, next) => {
-    console.log("Request method: " + req.method);
-    console.log("Request URL: " + req.url);
-    console.log("Request date: " + new Date());
+    console.log(`[${new Date()}] ${req.method} ${req.url}`);
     next();
 });
-
-// CORS and JSON parsing middleware
-app.use(cors())
-app.use(express.json());
 
 // Database Connection
 let db;
@@ -40,7 +38,9 @@ MongoClient.connect("mongodb+srv://abdurahman:afk@cluster0.jlckz.mongodb.net/", 
     // });
 });
 
-// Search route
+// Routes 
+
+// Search for courses by query (matches subject or location)
 app.get("/search", async (req, res) => {
     const query = req.query.q // Get the query from search
 
@@ -49,9 +49,8 @@ app.get("/search", async (req, res) => {
             // $text: {  $search: query  } // Execute the text search
             $or: [
                 { subject: { $regex: query, $options: "i" } },
-                { location: { $regex: query, $options: "i" } },
-                { price: parseFloat(query) ? { $eq: parseFloat(query) } : null }
-            ].filter(Boolean) // Remove null conditions
+                { location: { $regex: query, $options: "i" } }
+            ]
         }).toArray();
 
         if (results.length === 0) {
@@ -72,41 +71,45 @@ app.param("collectionName", (req, res, next, collectionName) => {
     return next();
 });
 
-// Retrieving all the courses
+// Retrieve all documents from a specific collection
 app.get("/collection/:collectionName", (req, res, next) => {
-    req.collection.find({}).toArray((e, results) => {
-        if (e) return next(e)
-        res.send(results);
+    req.collection.find({}).toArray((error, results) => {
+        if (error) return next(error) // Pass database errors to error-handling middleware
+        res.send(results); // Send the retrieved documents to the client
     });
 });
 
-// Get course by ID
+// Retrieve a specific document by ID from a specific collection
 app.get("/collection/:collectionName/:id", async (req, res, next) => {
     try {
         const result = await req.collection.findOne({ _id: new ObjectID(req.params.id) });
         if (!result) {
             return res.status(404).send({ error: "Document not found" });
         }
-        res.send(result);
+        res.send(result); // Send the retrieved document to the client
     } catch (error) {
         next(error); // Pass errors to the error-handling middleware
     }
 });
 
-// Update course
+// Update a document by ID
 app.put("/collection/:collectionName/:id", (req, res, next) => {
-    req.collection.updateOne(
-        {_id: new ObjectID(req.params.id)},
-        {$set: req.body},
-        {safe: true, multi: false},
-        (error, result) => {
-            if (error) return next(error)
-                res.send((result.result.n === 1) ? {msg: "success"} : {msg: "error"});
-        }
-    );
+    const updatedData = req.body; // Get the updated course data from the request body
+
+    if (updatedData.spaces !== undefined) {
+        req.collection.updateOne(
+            {_id: new ObjectID(req.params.id)},
+            {$set: req.body},
+            {safe: true, multi: false},
+            (error, result) => {
+                if (error) return next(error)
+                    res.send((result.result.n === 1) ? {msg: "success"} : {msg: "error"});
+            }
+        );
+    }
 });
 
-// Save order information
+// Save an order
 app.post("/collection/orders", (req, res, next) => {
     const orderData = req.body; // Access the order information sent from the front-end
 
@@ -138,6 +141,7 @@ app.use((req, res, next) => {
     res.send("File not found!");
 });
 
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on localhost:${PORT}`);
 });
