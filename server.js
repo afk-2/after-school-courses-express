@@ -96,17 +96,15 @@ app.get("/collection/:collectionName/:id", async (req, res, next) => {
 app.put("/collection/:collectionName/:id", (req, res, next) => {
     const updatedData = req.body; // Get the updated course data from the request body
 
-    if (updatedData.spaces !== undefined) {
-        req.collection.updateOne(
-            {_id: new ObjectID(req.params.id)},
-            {$set: req.body},
-            {safe: true, multi: false},
-            (error, result) => {
-                if (error) return next(error)
-                    res.send((result.result.n === 1) ? {msg: "success"} : {msg: "error"});
-            }
-        );
-    }
+    req.collection.updateOne(
+        {_id: new ObjectID(req.params.id)},
+        {$set: req.body},
+        {safe: true, multi: false},
+        (error, result) => {
+            if (error) return next(error)
+                res.send((result.result.n === 1) ? {msg: "success"} : {msg: "error"});
+        }
+    );
 });
 
 // Save an order
